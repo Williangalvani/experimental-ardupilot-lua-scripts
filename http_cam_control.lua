@@ -2,12 +2,11 @@
 
 --before you run:
 
+-- install cockpit v1.0.1 or newer
 -- set the joystick functions:
---  script1, script2 - zoom
+-- script1, script2 - zoom
 -- script3, script4 - focus
 -- custom1 - toggle awb
-
--- ATTENTION: make sure custom1 is set (in parameters) to a button under 16. Buttons 16-31 cannot be checked by this script yet
 
 
 -- SET YOUR CAMERA IP HERE
@@ -19,15 +18,23 @@ local cameraport = 80
 local MANUAL_CONTROL = {}
 MANUAL_CONTROL.id = 69
 MANUAL_CONTROL.fields = {
-    { "x", "<i2" },
-    { "y", "<i2" },
-    { "z", "<i2" },
-    { "r", "<i2" },
-    { "buttons", "<I2" },
-    { "buttons2", "<I2" },
-    { "target", "<B" },
-
-}
+  { "x", "<i2" },
+  { "y", "<i2" },
+  { "z", "<i2" },
+  { "r", "<i2" },
+  { "buttons", "<I2" },
+  { "target", "<B" },
+  { "buttons2", "<I2" },
+  { "enabled_extensions", "<B" },
+  { "s", "<i2" },
+  { "t", "<i2" },
+  { "aux1", "<i2" },
+  { "aux2", "<i2" },
+  { "aux3", "<i2" },
+  { "aux4", "<i2" },
+  { "aux5", "<i2" },
+  { "aux6", "<i2" },
+  }
 
 local all_btn_params = {
   "BTN0_FUNCTION",
@@ -74,7 +81,6 @@ function get_btn_for_function(func)
 end
 
 local custom1 = get_btn_for_function(91)
-gcs:send_text(0, "custom1 function: " .. get_btn_for_function(91))
 
 function mavlink_decode_header(message)
     -- build up a map of the result
@@ -182,18 +188,18 @@ function update()
     if (sub:is_button_pressed(1)) then
         send_http_request('/action/cgi_action?user=admin&pwd=e10adc3949ba59abbe56e057f20f883e&action=setPtzControl&json={"speed_h":50,"speed_v":50,"channel":0,"ptz_cmd":9}', "GET", {}, nil)
         needs_to_stop = true
-        --gcs:send_text(0, 'zoom in')
+        gcs:send_text(6, 'zoom in')
     elseif (sub:is_button_pressed(2)) then
       send_http_request('/action/cgi_action?user=admin&pwd=e10adc3949ba59abbe56e057f20f883e&action=setPtzControl&json={"speed_h":50,"speed_v":50,"channel":0,"ptz_cmd":10}', "GET", {}, nil)
-      --gcs:send_text(0, 'zoom out')
+      gcs:send_text(6, 'zoom out')
       needs_to_stop = true
     elseif (sub:is_button_pressed(3)) then
       send_http_request('/action/cgi_action?user=admin&pwd=e10adc3949ba59abbe56e057f20f883e&action=setPtzControl&json={"speed_h":50,"speed_v":50,"channel":0,"ptz_cmd":6}', "GET", {}, nil)
-      --gcs:send_text(0, 'focus -')
+      gcs:send_text(6, 'focus -')
       needs_to_stop = true
     elseif (sub:is_button_pressed(4)) then
       send_http_request('/action/cgi_action?user=admin&pwd=e10adc3949ba59abbe56e057f20f883e&action=setPtzControl&json={"speed_h":50,"speed_v":50,"channel":0,"ptz_cmd":5}', "GET", {}, nil)
-      --gcs:send_text(0, 'focus +')
+      gcs:send_text(6, 'focus +')
       needs_to_stop = true
     elseif (needs_to_stop) then
       send_http_request('/action/cgi_action?user=admin&pwd=e10adc3949ba59abbe56e057f20f883e&action=setPtzControl&json={"speed_h":50,"speed_v":50,"channel":0,"ptz_cmd":21}', "GET", {}, nil)
@@ -206,6 +212,10 @@ function update()
         local buttons = {}
         for i = 0, 15 do
             buttons[i] = (result.buttons >> i) & 1
+        end
+        local buttons2 = {}
+        for i = 0, 15 do
+            buttons2[i] = (result.buttons2 >> i) & 1
         end 
         -- TODO: allow checking extend buttons
         local custom1_pressed = false
@@ -213,8 +223,12 @@ function update()
         if buttons[custom1] == 1 then
           custom1_pressed = true
         end
-
+        if buttons2[custom1 - 16] == 1 then
+          custom1_pressed = true
+        end
+        gcs:send_text(0, "buttons2: " .. result.buttons2 .. " custom1: " .. buttons2[custom1 - 16])
         if custom1_pressed then
+            gcs:send_text(6, "Auto white balance")
             send_http_request('/action/cgi_action?user=admin&pwd=e10adc3949ba59abbe56e057f20f883e&action=setImageAdjustmentEx&json={"onceAWB":1}', "GET", {}, nil)
         end
     end
