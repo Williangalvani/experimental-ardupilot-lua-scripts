@@ -226,7 +226,7 @@ function update()
         if buttons2[custom1 - 16] == 1 then
           custom1_pressed = true
         end
-        gcs:send_text(0, "buttons2: " .. result.buttons2 .. " custom1: " .. buttons2[custom1 - 16])
+        -- gcs:send_text(0, "buttons2: " .. result.buttons2 .. " custom1: " .. buttons2[custom1 - 16])
         if custom1_pressed then
             gcs:send_text(6, "Auto white balance")
             send_http_request('/action/cgi_action?user=admin&pwd=e10adc3949ba59abbe56e057f20f883e&action=setImageAdjustmentEx&json={"onceAWB":1}', "GET", {}, nil)
